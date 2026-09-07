@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Prevent elastic scrolling and unwanted zoom on mobile */
         html, body {
             overscroll-behavior-y: none;
             touch-action: pan-x pan-y;
@@ -21,12 +20,11 @@
 </head>
 <body class="bg-slate-100 flex items-center justify-center w-full h-full font-sans m-0 p-0 select-none">
 
-    <!-- App Container (Full screen width and height) -->
+    <!-- App Container -->
     <div class="w-full h-full bg-white shadow-lg overflow-hidden flex flex-col relative">
         
         <!-- Status Bar & Header Wrapper -->
         <div class="bg-indigo-600 text-white shadow-md flex-shrink-0">
-            <!-- Status Bar -->
             <div class="px-6 pt-3 pb-1 flex justify-between items-center text-xs font-semibold select-none">
                 <span>9:41</span>
                 <div class="flex space-x-2 items-center">
@@ -36,7 +34,6 @@
                 </div>
             </div>
 
-            <!-- App Header -->
             <header class="px-4 py-3 flex justify-between items-center">
                 <h1 class="text-lg font-bold flex items-center gap-2">
                     <i class="fa-solid fa-folder-open"></i> 資料フォルダー
@@ -160,7 +157,7 @@
             </div>
         </div>
 
-        <!-- Document Detail Modal (Full Screen Height Preview with 80% Large Image) -->
+        <!-- Document Detail Modal -->
         <div id="detail-modal" class="absolute inset-0 bg-black/50 backdrop-blur-sm z-30 hidden flex items-center justify-center p-4">
             <div class="bg-white w-full h-[95%] rounded-2xl p-6 shadow-xl flex flex-col overflow-y-auto">
                 <div class="flex justify-between items-center mb-3">
@@ -188,25 +185,23 @@
     </div>
 
     <script>
-        // Initial Mock Data (or loaded from localStorage to prevent overwriting with old state)
-        let documents = JSON.parse(localStorage.getItem('app_documents')) || [
-            {
-                id: '1',
-                title: 'Q3プロジェクト計画書',
-                category: '仕事',
-                imageBase64: '',
-                tags: '重要, 会議',
-                content: '第3四半期のマーケティング戦略およびロードマップの共有資料。'
-            },
-            {
-                id: '2',
-                title: '資格試験の要点まとめ',
-                category: '勉強',
-                imageBase64: '',
-                tags: '資格, 暗記',
-                content: '直前確認用の重要キーワードと過去問の傾向分析メモ。'
-            }
-        ];
+        // Data Initialization from LocalStorage
+        let documents = [];
+        try {
+            const savedData = localStorage.getItem('app_documents');
+            documents = savedData ? JSON.parse(savedData) : [
+                {
+                    id: '1',
+                    title: 'Q3プロジェクト計画書',
+                    category: '仕事',
+                    imageBase64: '',
+                    tags: '重要, 会議',
+                    content: '第3四半期のマーケティング戦略およびロードマップの共有資料。'
+                }
+            ];
+        } catch (e) {
+            documents = [];
+        }
 
         let currentFilter = 'すべて';
         let activeDetailId = null;
@@ -219,9 +214,12 @@
             renderDocuments();
         });
 
-        // Save local persistent state helper
         function saveLocalState() {
-            localStorage.setItem('app_documents', JSON.stringify(documents));
+            try {
+                localStorage.setItem('app_documents', JSON.stringify(documents));
+            } catch (e) {
+                console.error('Storage error:', e);
+            }
         }
 
         function handleImagePreview(event) {
@@ -246,7 +244,9 @@
             
             const filtered = documents.filter(d => {
                 const matchesCategory = currentFilter === 'すべて' || d.category === currentFilter;
-                const matchesSearch = d.title.toLowerCase().includes(searchVal) || d.tags.toLowerCase().includes(searchVal) || d.content.toLowerCase().includes(searchVal);
+                const matchesSearch = (d.title || '').toLowerCase().includes(searchVal) || 
+                                      (d.tags || '').toLowerCase().includes(searchVal) || 
+                                      (d.content || '').toLowerCase().includes(searchVal);
                 return matchesCategory && matchesSearch;
             });
 
@@ -401,9 +401,7 @@
         function deleteCurrentDocument() {
             if (!activeDetailId) return;
             
-            const targetId = activeDetailId;
-            documents = documents.filter(d => d.id !== targetId);
-            
+            documents = documents.filter(d => d.id !== activeDetailId);
             saveLocalState();
             closeDetailModal();
             renderDocuments();
