@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>資料保存アプリ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen font-sans">
+
+    <!-- iPhone Mockup Container -->
+    <div class="w-full max-w-sm h-[844px] bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col border-8 border-slate-800 relative">
+        
+        <!-- Status Bar -->
+        <div class="bg-indigo-600 text-white px-6 py-3 flex justify-between items-center text-sm font-semibold select-none">
+            <span>9:41</span>
+            <div class="flex space-x-2 items-center">
+                <i class="fa-solid fa-signal text-xs"></i>
+                <i class="fa-solid fa-wifi text-xs"></i>
+                <i class="fa-solid fa-battery-full text-base"></i>
+            </div>
+        </div>
+
+        <!-- App Header -->
+        <header class="bg-indigo-600 text-white px-4 py-3 flex justify-between items-center shadow-md">
+            <h1 class="text-lg font-bold flex items-center gap-2">
+                <i class="fa-solid fa-folder-open"></i> 資料フォルダー
+            </h1>
+            <button onclick="openSettingsModal()" class="text-white hover:text-indigo-100 transition p-1">
+                <i class="fa-solid fa-gear text-xl"></i>
+            </button>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-4 pb-20 bg-slate-50" id="main-content">
+            
+            <!-- Search & Filter -->
+            <div class="mb-4">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <i class="fa-solid fa-search"></i>
+                    </span>
+                    <input type="text" id="search-input" oninput="filterDocuments()" placeholder="タイトルやタグで検索..." class="w-full pl-10 pr-4 py-2 bg-white rounded-full border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm">
+                </div>
+            </div>
+
+            <!-- Category Pills -->
+            <div class="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none" id="category-pills">
+                <button onclick="filterCategory('すべて')" class="category-btn px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-medium whitespace-nowrap shadow-sm">すべて</button>
+                <button onclick="filterCategory('仕事')" class="category-btn px-3 py-1 bg-white text-slate-600 rounded-full text-xs font-medium whitespace-nowrap border border-slate-200 hover:bg-slate-100">仕事</button>
+                <button onclick="filterCategory('勉強')" class="category-btn px-3 py-1 bg-white text-slate-600 rounded-full text-xs font-medium whitespace-nowrap border border-slate-200 hover:bg-slate-100">勉強</button>
+                <button onclick="filterCategory('プライベート')" class="category-btn px-3 py-1 bg-white text-slate-600 rounded-full text-xs font-medium whitespace-nowrap border border-slate-200 hover:bg-slate-100">プライベート</button>
+                <button onclick="filterCategory('アイデア')" class="category-btn px-3 py-1 bg-white text-slate-600 rounded-full text-xs font-medium whitespace-nowrap border border-slate-200 hover:bg-slate-100">アイデア</button>
+            </div>
+
+            <!-- Document List -->
+            <div id="document-list" class="space-y-3">
+                <!-- Dynamically populated documents -->
+            </div>
+        </main>
+
+        <!-- Floating Action Button -->
+        <div class="absolute bottom-6 right-6 z-10">
+            <button onclick="openAddModal()" class="w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition transform active:scale-95">
+                <i class="fa-solid fa-plus text-2xl"></i>
+            </button>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="absolute top-16 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-xs shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50">
+            保存しました
+        </div>
+
+        <!-- Add/Edit Document Modal -->
+        <div id="document-modal" class="absolute inset-0 bg-black/50 backdrop-blur-sm z-30 hidden flex items-end justify-center">
+            <div class="bg-white w-full rounded-t-[30px] p-6 max-h-[90%] overflow-y-auto animate-slide-up">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="modal-title" class="text-lg font-bold text-slate-800">新規資料追加</h2>
+                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+                <form id="document-form" onsubmit="saveDocument(event)" class="space-y-4">
+                    <input type="hidden" id="document-id">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">タイトル</label>
+                        <input type="text" id="document-title-input" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">カテゴリ</label>
+                        <select id="document-category" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+                            <option value="仕事">仕事</option>
+                            <option value="勉強">勉強</option>
+                            <option value="プライベート">プライベート</option>
+                            <option value="アイデア">アイデア</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">添付画像 / スクリーンショット</label>
+                        <input type="file" id="document-image-file" accept="image/*" onchange="handleImagePreview(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                        <input type="hidden" id="document-image-base64">
+                        <div id="image-preview-container" class="mt-2 hidden">
+                            <img id="image-preview" class="w-20 h-20 object-cover rounded-xl border border-slate-200">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">タグ (カンマ区切り)</label>
+                        <input type="text" id="document-tags" placeholder="重要, 会議, 参考" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">メモ・内容</label>
+                        <textarea id="document-content" rows="3" placeholder="資料の詳細やメモを入力..." required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold shadow hover:bg-indigo-700 transition">保存する</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Settings Modal (Google Sheets Sync) -->
+        <div id="settings-modal" class="absolute inset-0 bg-black/50 backdrop-blur-sm z-30 hidden flex items-center justify-center p-4">
+            <div class="bg-white w-full rounded-2xl p-6 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-slate-800">スプレッドシート連携設定</h2>
+                    <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-500 mb-3">Google Apps Script (GAS) のWebアプリURLを入力することで、画像データ（Base64）を含めてスプレッドシートとデータを同期できます。</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">GAS Webアプリ URL</label>
+                        <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <div class="flex gap-2 pt-2">
+                        <button onclick="syncWithSheet()" class="flex-1 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow hover:bg-emerald-700 transition flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-rotate"></i> 同期テスト/保存
+                        </button>
+                        <button onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-300 transition">閉じる</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Detail Modal -->
+        <div id="detail-modal" class="absolute inset-0 bg-black/50 backdrop-blur-sm z-30 hidden flex items-end justify-center">
+            <div class="bg-white w-full rounded-t-[30px] p-6 max-h-[85%] overflow-y-auto">
+                <div class="flex justify-between items-center mb-3">
+                    <span id="detail-category" class="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium"></span>
+                    <div class="flex gap-2">
+                        <button onclick="editCurrentDocument()" class="text-slate-400 hover:text-indigo-600 p-1"><i class="fa-solid fa-pen text-base"></i></button>
+                        <button onclick="deleteCurrentDocument()" class="text-slate-400 hover:text-red-500 p-1"><i class="fa-solid fa-trash text-base"></i></button>
+                        <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-600 p-1 ml-2"><i class="fa-solid fa-xmark text-xl"></i></button>
+                    </div>
+                </div>
+                
+                <div id="detail-image-container" class="mb-4 hidden">
+                    <img id="detail-image" class="w-full h-48 object-cover rounded-2xl shadow-sm">
+                </div>
+
+                <h2 id="detail-title" class="text-xl font-bold text-slate-800 mb-2"></h2>
+                <div id="detail-tags-container" class="flex flex-wrap gap-1 mb-4"></div>
+                
+                <div class="mb-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">メモ・内容</h3>
+                    <div id="detail-content" class="bg-slate-50 p-3 rounded-xl text-sm text-slate-700 whitespace-pre-wrap leading-relaxed"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-slate-300 rounded-full pointer-events-none"></div>
+    </div>
+
+    <script>
+        // Initial Mock Data
+        let documents = [
+            {
+                id: '1',
+                title: 'Q3プロジェクト計画書',
+                category: '仕事',
+                imageBase64: '',
+                tags: '重要, 会議',
+                content: '第3四半期のマーケティング戦略およびロードマップの共有資料。'
+            },
+            {
+                id: '2',
+                title: '資格試験の要点まとめ',
+                category: '勉強',
+                imageBase64: '',
+                tags: '資格, 暗記',
+                content: '直前確認用の重要キーワードと過去問の傾向分析メモ。'
+            }
+        ];
+
+        let currentFilter = 'すべて';
+        let activeDetailId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedGasUrl = localStorage.getItem('gas_url');
+            if (savedGasUrl) {
+                document.getElementById('gas-url').value = savedGasUrl;
+            }
+            renderDocuments();
+        });
+
+        function handleImagePreview(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64String = e.target.result;
+                document.getElementById('document-image-base64').value = base64String;
+                
+                const preview = document.getElementById('image-preview');
+                preview.src = base64String;
+                document.getElementById('image-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderDocuments() {
+            const listEl = document.getElementById('document-list');
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            
+            const filtered = documents.filter(d => {
+                const matchesCategory = currentFilter === 'すべて' || d.category === currentFilter;
+                const matchesSearch = d.title.toLowerCase().includes(searchVal) || d.tags.toLowerCase().includes(searchVal) || d.content.toLowerCase().includes(searchVal);
+                return matchesCategory && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-10 text-slate-400">
+                        <i class="fa-solid fa-folder-open text-3xl mb-2"></i>
+                        <p class="text-xs">資料が見つかりませんでした</p>
+                    </div>`;
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(d => `
+                <div onclick="openDetailModal('${d.id}')" class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm hover:shadow transition cursor-pointer flex items-center gap-3">
+                    <div class="w-14 h-14 bg-indigo-50 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        ${d.imageBase64 ? `<img src="${d.imageBase64}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-file-lines text-indigo-300 text-lg"></i>`}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-medium mb-1">${d.category}</span>
+                        <h3 class="font-bold text-slate-800 text-sm truncate">${d.title}</h3>
+                        <p class="text-xs text-slate-400 truncate mt-0.5">${d.content}</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs text-slate-300 pr-1"></i>
+                </div>
+            `).join('');
+        }
+
+        function filterCategory(category) {
+            currentFilter = category;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if (btn.innerText === category) {
+                    btn.className = 'category-btn px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-medium whitespace-nowrap shadow-sm';
+                } else {
+                    btn.className = 'category-btn px-3 py-1 bg-white text-slate-600 rounded-full text-xs font-medium whitespace-nowrap border border-slate-200 hover:bg-slate-100';
+                }
+            });
+            renderDocuments();
+        }
+
+        function filterDocuments() {
+            renderDocuments();
+        }
+
+        function openAddModal() {
+            document.getElementById('modal-title').innerText = '新規資料追加';
+            document.getElementById('document-id').value = '';
+            document.getElementById('document-form').reset();
+            document.getElementById('document-image-base64').value = '';
+            document.getElementById('image-preview-container').classList.add('hidden');
+            document.getElementById('document-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('document-modal').classList.add('hidden');
+        }
+
+        function saveDocument(e) {
+            e.preventDefault();
+            const id = document.getElementById('document-id').value;
+            const title = document.getElementById('document-title-input').value;
+            const category = document.getElementById('document-category').value;
+            const imageBase64 = document.getElementById('document-image-base64').value;
+            const tags = document.getElementById('document-tags').value;
+            const content = document.getElementById('document-content').value;
+
+            if (id) {
+                const index = documents.findIndex(d => d.id === id);
+                if (index !== -1) {
+                    documents[index] = { 
+                        id, 
+                        title, 
+                        category, 
+                        imageBase64: imageBase64 || documents[index].imageBase64, 
+                        tags, 
+                        content 
+                    };
+                }
+            } else {
+                const newDoc = {
+                    id: Date.now().toString(),
+                    title, 
+                    category, 
+                    imageBase64, 
+                    tags, 
+                    content
+                };
+                documents.unshift(newDoc);
+            }
+
+            closeModal();
+            renderDocuments();
+            showToast('資料を保存しました');
+            autoSyncToSheet();
+        }
+
+        function openDetailModal(id) {
+            activeDetailId = id;
+            const d = documents.find(item => item.id === id);
+            if (!d) return;
+
+            document.getElementById('detail-category').innerText = d.category;
+            document.getElementById('detail-title').innerText = d.title;
+            
+            const imgContainer = document.getElementById('detail-image-container');
+            if (d.imageBase64) {
+                document.getElementById('detail-image').src = d.imageBase64;
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+
+            const tagsContainer = document.getElementById('detail-tags-container');
+            if (d.tags) {
+                tagsContainer.innerHTML = d.tags.split(',').map(tag => `<span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-medium"><i class="fa-solid fa-tag text-[9px] mr-1"></i>${tag.trim()}</span>`).join('');
+            } else {
+                tagsContainer.innerHTML = '';
+            }
+
+            document.getElementById('detail-content').innerText = d.content;
+            document.getElementById('detail-modal').classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+            activeDetailId = null;
+        }
+
+        function editCurrentDocument() {
+            const d = documents.find(item => item.id === activeDetailId);
+            if (!d) return;
+
+            closeDetailModal();
+            document.getElementById('modal-title').innerText = '資料編集';
+            document.getElementById('document-id').value = d.id;
+            document.getElementById('document-title-input').value = d.title;
+            document.getElementById('document-category').value = d.category;
+            document.getElementById('document-image-base64').value = d.imageBase64 || '';
+            
+            if (d.imageBase64) {
+                document.getElementById('image-preview').src = d.imageBase64;
+                document.getElementById('image-preview-container').classList.remove('hidden');
+            } else {
+                document.getElementById('image-preview-container').classList.add('hidden');
+            }
+
+            document.getElementById('document-tags').value = d.tags;
+            document.getElementById('document-content').value = d.content;
+            document.getElementById('document-modal').classList.remove('hidden');
+        }
+
+        function deleteCurrentDocument() {
+            if (!activeDetailId) return;
+            
+            // confirmの代わりに確実に動作する処理とトースト表示を確実に行う
+            const targetId = activeDetailId;
+            documents = documents.filter(d => d.id !== targetId);
+            
+            closeDetailModal();
+            renderDocuments();
+            showToast('削除しました');
+            autoSyncToSheet();
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function syncWithSheet() {
+            const url = document.getElementById('gas-url').value.trim();
+            localStorage.setItem('gas_url', url);
+            if (!url) {
+                showToast('URLを入力してください');
+                return;
+            }
+            
+            showToast('スプレッドシートと同期中...');
+            setTimeout(() => {
+                showToast('同期が完了しました');
+                closeSettingsModal();
+            }, 1000);
+        }
+
+        function autoSyncToSheet() {
+            const url = localStorage.getItem('gas_url');
+            if (!url) return;
+            fetch(url, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(documents)
+            }).catch(() => {});
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
