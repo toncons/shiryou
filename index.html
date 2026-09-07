@@ -2,19 +2,28 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>資料保存アプリ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Prevent elastic scrolling and unwanted zoom on mobile */
+        html, body {
+            overscroll-behavior-y: none;
+            touch-action: pan-x pan-y;
+            height: 100%;
+            overflow: hidden;
+        }
+    </style>
 </head>
-<body class="bg-slate-100 flex items-center justify-center min-h-screen font-sans m-0 p-0">
+<body class="bg-slate-100 flex items-center justify-center h-screen font-sans m-0 p-0 select-none">
 
-    <!-- App Container (Full iPhone viewport size without outer mockup frame) -->
-    <div class="w-full max-w-sm h-screen sm:h-[844px] bg-white sm:rounded-[30px] shadow-lg overflow-hidden flex flex-col relative">
+    <!-- App Container (Fixed viewport size) -->
+    <div class="w-full max-w-sm h-full sm:h-[844px] bg-white sm:rounded-[30px] shadow-lg overflow-hidden flex flex-col relative">
         
         <!-- Status Bar & Header Wrapper -->
         <div class="bg-indigo-600 text-white shadow-md flex-shrink-0">
-            <!-- Status Bar (iPhone simulated top spacing) -->
+            <!-- Status Bar -->
             <div class="px-6 pt-3 pb-1 flex justify-between items-center text-xs font-semibold select-none">
                 <span>9:41</span>
                 <div class="flex space-x-2 items-center">
@@ -174,8 +183,8 @@
     </div>
 
     <script>
-        // Initial Mock Data
-        let documents = [
+        // Initial Mock Data (or loaded from localStorage to prevent overwriting with old state)
+        let documents = JSON.parse(localStorage.getItem('app_documents')) || [
             {
                 id: '1',
                 title: 'Q3プロジェクト計画書',
@@ -204,6 +213,11 @@
             }
             renderDocuments();
         });
+
+        // Save local persistent state helper
+        function saveLocalState() {
+            localStorage.setItem('app_documents', JSON.stringify(documents));
+        }
 
         function handleImagePreview(event) {
             const file = event.target.files[0];
@@ -317,6 +331,7 @@
                 documents.unshift(newDoc);
             }
 
+            saveLocalState();
             closeModal();
             renderDocuments();
             showToast('資料を保存しました');
@@ -384,6 +399,7 @@
             const targetId = activeDetailId;
             documents = documents.filter(d => d.id !== targetId);
             
+            saveLocalState();
             closeDetailModal();
             renderDocuments();
             showToast('削除しました');
@@ -407,21 +423,28 @@
             }
             
             showToast('スプレッドシートと同期中...');
-            setTimeout(() => {
+            autoSyncToSheet(() => {
                 showToast('同期が完了しました');
                 closeSettingsModal();
-            }, 1000);
+            });
         }
 
-        function autoSyncToSheet() {
+        function autoSyncToSheet(callback) {
             const url = localStorage.getItem('gas_url');
-            if (!url) return;
+            if (!url) {
+                if (callback) callback();
+                return;
+            }
             fetch(url, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(documents)
-            }).catch(() => {});
+            }).then(() => {
+                if (callback) callback();
+            }).catch(() => {
+                if (callback) callback();
+            });
         }
 
         function showToast(message) {
