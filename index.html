@@ -30,7 +30,7 @@
                     <h1 class="text-lg font-bold flex items-center gap-2">
                         <i class="fa-solid fa-folder-open"></i> 資料フォルダー
                     </h1>
-                    <span class="bg-indigo-500 text-indigo-100 text-[10px] px-2 py-0.5 rounded-full font-medium">Ver 1.5</span>
+                    <span class="bg-indigo-500 text-indigo-100 text-[10px] px-2 py-0.5 rounded-full font-medium">Ver 1.7</span>
                 </div>
                 <button onclick="openSettingsModal()" class="text-white hover:text-indigo-100 transition p-1">
                     <i class="fa-solid fa-gear text-xl"></i>
@@ -192,8 +192,8 @@
                             <button onclick="saveMarkedImage()" class="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition font-medium shadow">
                                 <i class="fa-solid fa-floppy-disk mr-1"></i>上書き保存
                             </button>
-                            <button onclick="openImageInNewTab()" class="px-3 py-1 bg-emerald-600 text-white text-xs rounded-lg hover:bg-emerald-700 transition font-medium shadow" title="別タブで開いて長押し保存">
-                                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>写真に保存
+                            <button onclick="openFullScreenImageModal()" class="px-3 py-1 bg-emerald-600 text-white text-xs rounded-lg hover:bg-emerald-700 transition font-medium shadow" title="全画面で拡大表示">
+                                <i class="fa-solid fa-expand mr-1"></i>写真に保存
                             </button>
                         </div>
                     </div>
@@ -206,6 +206,19 @@
                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">メモ・内容</h3>
                     <div id="detail-content" class="bg-slate-50 p-4 rounded-xl text-sm text-slate-700 whitespace-pre-wrap leading-relaxed h-full min-h-[80px]"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Fullscreen Image Popup Modal (App Inside) -->
+        <div id="fullscreen-image-modal" class="absolute inset-0 bg-black/95 z-50 hidden flex flex-col p-4">
+            <div class="w-full flex justify-between items-center py-2 px-2 border-b border-slate-800 flex-shrink-0">
+                <span class="text-amber-300 text-xs font-medium"><i class="fa-solid fa-circle-info mr-1"></i>画像を長押しして「“写真”に追加」を選択してください</span>
+                <button onclick="closeFullScreenImageModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition flex items-center gap-1 shadow-lg">
+                    <i class="fa-solid fa-xmark text-sm"></i> 閉じる
+                </button>
+            </div>
+            <div class="flex-1 flex items-center justify-center w-full overflow-hidden py-2">
+                <img id="fullscreen-img" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl" alt="拡大画像">
             </div>
         </div>
     </div>
@@ -252,7 +265,6 @@
             if (!canvas) return;
             ctx = canvas.getContext('2d');
 
-            // マウスおよびタッチイベントの紐付け
             canvas.addEventListener('mousedown', startDrawing);
             canvas.addEventListener('mousemove', draw);
             canvas.addEventListener('mouseup', stopDrawing);
@@ -366,36 +378,15 @@
             }
         }
 
-        // 新規追加：画像を別タブで開いて長押し保存できるようにする処理
-        function openImageInNewTab() {
+        function openFullScreenImageModal() {
             if (!canvas) return;
             const dataUrl = canvas.toDataURL('image/png');
-            
-            // 新しいウィンドウ（タブ）を開き、画像を表示
-            const win = window.open();
-            if (win) {
-                win.document.write(`
-                    <!DOCTYPE html>
-                    <html lang="ja">
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>画像保存</title>
-                        <style>
-                            body { margin: 0; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: #fff; font-family: sans-serif; }
-                            img { max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 8px; }
-                            p { margin-top: 15px; font-size: 14px; text-align: center; color: #ccc; }
-                        </style>
-                    </head>
-                    <body>
-                        <img src="${dataUrl}" alt="マーキング画像">
-                        <p>画像を長押しして「“写真”に追加」を選択してください</p>
-                    </body>
-                    </html>
-                `);
-                win.document.close();
-            } else {
-                showToast('ポップアップがブロックされました');
-            }
+            document.getElementById('fullscreen-img').src = dataUrl;
+            document.getElementById('fullscreen-image-modal').classList.remove('hidden');
+        }
+
+        function closeFullScreenImageModal() {
+            document.getElementById('fullscreen-image-modal').classList.add('hidden');
         }
 
         function saveLocalState() {
