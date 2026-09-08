@@ -30,7 +30,7 @@
                     <h1 class="text-lg font-bold flex items-center gap-2">
                         <i class="fa-solid fa-folder-open"></i> 資料フォルダー
                     </h1>
-                    <span class="bg-indigo-500 text-indigo-100 text-[10px] px-2 py-0.5 rounded-full font-medium">Ver 1.2</span>
+                    <span class="bg-indigo-500 text-indigo-100 text-[10px] px-2 py-0.5 rounded-full font-medium">Ver 1.4</span>
                 </div>
                 <button onclick="openSettingsModal()" class="text-white hover:text-indigo-100 transition p-1">
                     <i class="fa-solid fa-gear text-xl"></i>
@@ -88,7 +88,7 @@
                     </button>
                 </div>
                 <form id="document-form" onsubmit="saveDocument(event)" class="space-y-4 flex-1 flex flex-col justify-between">
-                    <div class="space-y-4">
+                    <div class="space-y-3">
                         <input type="hidden" id="document-id">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">タイトル</label>
@@ -105,6 +105,10 @@
                             </select>
                         </div>
                         <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">日付</label>
+                            <input type="date" id="document-date" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+                        </div>
+                        <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">添付画像 / スクリーンショット</label>
                             <input type="file" id="document-image-file" accept="image/*" onchange="handleImagePreview(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                             <input type="hidden" id="document-image-base64">
@@ -118,7 +122,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">メモ・内容</label>
-                            <textarea id="document-content" rows="4" placeholder="資料の詳細やメモを入力..." required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
+                            <textarea id="document-content" rows="3" placeholder="資料の詳細やメモを入力..." required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
                         </div>
                     </div>
                     <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold shadow hover:bg-indigo-700 transition">保存する</button>
@@ -158,16 +162,41 @@
         <div id="detail-modal" class="absolute inset-0 bg-black/50 backdrop-blur-sm z-30 hidden flex items-center justify-center p-4">
             <div class="bg-white w-full h-[95%] rounded-2xl p-6 shadow-xl flex flex-col overflow-y-auto">
                 <div class="flex justify-between items-center mb-3">
-                    <span id="detail-category" class="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium"></span>
+                    <div class="flex items-center gap-2">
+                        <span id="detail-category" class="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium"></span>
+                        <span id="detail-date" class="text-xs text-slate-400 font-medium"></span>
+                    </div>
                     <div class="flex gap-2">
-                        <button onclick="editCurrentDocument()" class="text-slate-400 hover:text-indigo-600 p-1"><i class="fa-solid fa-pen text-base"></i></button>
-                        <button onclick="deleteCurrentDocument()" class="text-slate-400 hover:text-red-500 p-1"><i class="fa-solid fa-trash text-base"></i></button>
+                        <button onclick="editCurrentDocument()" class="text-slate-400 hover:text-indigo-600 p-1" title="編集"><i class="fa-solid fa-pen text-base"></i></button>
+                        <button onclick="deleteCurrentDocument()" class="text-slate-400 hover:text-red-500 p-1" title="削除"><i class="fa-solid fa-trash text-base"></i></button>
                         <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-600 p-1 ml-2"><i class="fa-solid fa-xmark text-xl"></i></button>
                     </div>
                 </div>
                 
-                <div id="detail-image-container" class="mb-4 hidden flex-shrink-0 flex justify-center">
-                    <img id="detail-image" class="w-full max-h-[75vh] object-contain rounded-xl shadow-md bg-slate-900 border border-slate-200">
+                <!-- Image & Marking Canvas Container -->
+                <div id="detail-image-container" class="mb-4 hidden flex-shrink-0 flex flex-col items-center">
+                    <div class="relative w-full flex justify-center bg-slate-900 rounded-xl overflow-hidden border border-slate-200">
+                        <canvas id="marking-canvas" class="max-h-[60vh] object-contain cursor-crosshair touch-none"></canvas>
+                    </div>
+                    <!-- Marking Tool Controls -->
+                    <div class="flex items-center justify-between w-full mt-2 px-1">
+                        <div class="flex items-center gap-2">
+                            <button onclick="setMarkerColor('red')" id="btn-color-red" class="w-6 h-6 rounded-full bg-red-500 ring-2 ring-offset-1 ring-indigo-400 transition"></button>
+                            <button onclick="setMarkerColor('yellow')" id="btn-color-yellow" class="w-6 h-6 rounded-full bg-yellow-400 ring-1 ring-slate-300 transition"></button>
+                            <button onclick="setMarkerColor('blue')" id="btn-color-blue" class="w-6 h-6 rounded-full bg-blue-500 ring-1 ring-slate-300 transition"></button>
+                            <button onclick="clearCanvasMarks()" class="px-2.5 py-1 bg-slate-200 text-slate-700 text-xs rounded-lg hover:bg-slate-300 transition font-medium">
+                                <i class="fa-solid fa-rotate-left mr-1"></i>リセット
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="saveMarkedImage()" class="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition font-medium shadow">
+                                <i class="fa-solid fa-floppy-disk mr-1"></i>上書き保存
+                            </button>
+                            <button onclick="downloadImageToPhone()" class="px-3 py-1 bg-emerald-600 text-white text-xs rounded-lg hover:bg-emerald-700 transition font-medium shadow">
+                                <i class="fa-solid fa-download mr-1"></i>写真に保存
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <h2 id="detail-title" class="text-xl font-bold text-slate-800 mb-2"></h2>
@@ -175,7 +204,7 @@
                 
                 <div class="flex-1">
                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">メモ・内容</h3>
-                    <div id="detail-content" class="bg-slate-50 p-4 rounded-xl text-sm text-slate-700 whitespace-pre-wrap leading-relaxed h-full min-h-[120px]"></div>
+                    <div id="detail-content" class="bg-slate-50 p-4 rounded-xl text-sm text-slate-700 whitespace-pre-wrap leading-relaxed h-full min-h-[80px]"></div>
                 </div>
             </div>
         </div>
@@ -190,6 +219,7 @@
                     id: '1',
                     title: 'Q3プロジェクト計画書',
                     category: '仕事',
+                    date: new Date().toISOString().split('T')[0],
                     imageBase64: '',
                     tags: '重要, 会議',
                     content: '第3四半期のマーケティング戦略およびロードマップの共有資料。'
@@ -202,13 +232,151 @@
         let currentFilter = 'すべて';
         let activeDetailId = null;
 
+        // Canvas / Drawing state variables
+        let canvas, ctx;
+        let isDrawing = false;
+        let currentColor = '#ef4444'; // デフォルト赤色
+        let originalImageObj = new Image();
+
         document.addEventListener('DOMContentLoaded', () => {
             const savedGasUrl = localStorage.getItem('gas_url');
             if (savedGasUrl) {
                 document.getElementById('gas-url').value = savedGasUrl;
             }
             renderDocuments();
+            initCanvasEvents();
         });
+
+        function initCanvasEvents() {
+            canvas = document.getElementById('marking-canvas');
+            if (!canvas) return;
+            ctx = canvas.getContext('2d');
+
+            // マウスおよびタッチイベントの紐付け
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseleave', stopDrawing);
+
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', (e) => {
+                const mouseEvent = new MouseEvent('mouseup', {});
+                canvas.dispatchEvent(mouseEvent);
+            });
+        }
+
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const coords = getCanvasCoordinates(e);
+            ctx.beginPath();
+            ctx.moveTo(coords.x, coords.y);
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const coords = getCanvasCoordinates(e);
+            ctx.lineTo(coords.x, coords.y);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            ctx.closePath();
+        }
+
+        function setMarkerColor(colorName) {
+            document.querySelectorAll('#detail-image-container button[id^="btn-color-"]').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-offset-1', 'ring-indigo-400');
+                btn.classList.add('ring-1', 'ring-slate-300');
+            });
+            const activeBtn = document.getElementById(`btn-color-${colorName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('ring-1', 'ring-slate-300');
+                activeBtn.classList.add('ring-2', 'ring-offset-1', 'ring-indigo-400');
+            }
+
+            if (colorName === 'red') currentColor = '#ef4444';
+            else if (colorName === 'yellow') currentColor = '#facc15';
+            else if (colorName === 'blue') currentColor = '#3b82f6';
+        }
+
+        function clearCanvasMarks() {
+            const d = documents.find(item => item.id === activeDetailId);
+            if (!d || !d.imageBase64) return;
+            redrawCanvasWithImage(d.imageBase64);
+            showToast('マーキングをリセットしました');
+        }
+
+        function redrawCanvasWithImage(base64Src) {
+            originalImageObj = new Image();
+            originalImageObj.onload = function() {
+                canvas.width = originalImageObj.naturalWidth;
+                canvas.height = originalImageObj.naturalHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(originalImageObj, 0, 0);
+            };
+            originalImageObj.src = base64Src;
+        }
+
+        function saveMarkedImage() {
+            if (!activeDetailId) return;
+            const updatedBase64 = canvas.toDataURL('image/png');
+            
+            const doc = documents.find(item => item.id === activeDetailId);
+            if (doc) {
+                doc.imageBase64 = updatedBase64;
+                saveLocalState();
+                renderDocuments();
+                showToast('マーキングを上書き保存しました');
+                autoSyncToSheet();
+            }
+        }
+
+        function downloadImageToPhone() {
+            if (!canvas) return;
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `marked_document_${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('画像をダウンロードしました');
+        }
 
         function saveLocalState() {
             try {
@@ -261,7 +429,10 @@
                         ${d.imageBase64 ? `<img src="${d.imageBase64}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-file-lines text-indigo-300 text-lg"></i>`}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <span class="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-medium mb-1">${d.category}</span>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-medium">${d.category}</span>
+                            <span class="text-[10px] text-slate-400">${d.date || ''}</span>
+                        </div>
                         <h3 class="font-bold text-slate-800 text-sm truncate">${d.title}</h3>
                         <p class="text-xs text-slate-400 truncate mt-0.5">${d.content}</p>
                     </div>
@@ -292,6 +463,7 @@
             document.getElementById('document-form').reset();
             document.getElementById('document-image-base64').value = '';
             document.getElementById('image-preview-container').classList.add('hidden');
+            document.getElementById('document-date').value = new Date().toISOString().split('T')[0];
             document.getElementById('document-modal').classList.remove('hidden');
         }
 
@@ -304,6 +476,7 @@
             const id = document.getElementById('document-id').value;
             const title = document.getElementById('document-title-input').value;
             const category = document.getElementById('document-category').value;
+            const date = document.getElementById('document-date').value;
             const imageBase64 = document.getElementById('document-image-base64').value;
             const tags = document.getElementById('document-tags').value;
             const content = document.getElementById('document-content').value;
@@ -315,6 +488,7 @@
                         id, 
                         title, 
                         category, 
+                        date,
                         imageBase64: imageBase64 || documents[index].imageBase64, 
                         tags, 
                         content 
@@ -325,6 +499,7 @@
                     id: Date.now().toString(),
                     title, 
                     category, 
+                    date,
                     imageBase64, 
                     tags, 
                     content
@@ -345,12 +520,13 @@
             if (!d) return;
 
             document.getElementById('detail-category').innerText = d.category;
+            document.getElementById('detail-date').innerText = d.date || '';
             document.getElementById('detail-title').innerText = d.title;
             
             const imgContainer = document.getElementById('detail-image-container');
             if (d.imageBase64) {
-                document.getElementById('detail-image').src = d.imageBase64;
                 imgContainer.classList.remove('hidden');
+                redrawCanvasWithImage(d.imageBase64);
             } else {
                 imgContainer.classList.add('hidden');
             }
@@ -380,6 +556,7 @@
             document.getElementById('document-id').value = d.id;
             document.getElementById('document-title-input').value = d.title;
             document.getElementById('document-category').value = d.category;
+            document.getElementById('document-date').value = d.date || new Date().toISOString().split('T')[0];
             document.getElementById('document-image-base64').value = d.imageBase64 || '';
             
             if (d.imageBase64) {
@@ -428,7 +605,6 @@
             });
         }
 
-        // 新規追加：スプレッドシートからデータを取得して復元する機能
         function loadFromSheet() {
             const url = document.getElementById('gas-url').value.trim();
             localStorage.setItem('gas_url', url);
