@@ -30,7 +30,7 @@
                     <h1 class="text-lg font-bold flex items-center gap-2">
                         <i class="fa-solid fa-folder-open"></i> 資料フォルダー
                     </h1>
-                    <span class="bg-indigo-500 text-indigo-100 text-[10px] px-2 py-0.5 rounded-full font-medium">Ver 1.8</span>
+                    <span class="bg-indigo-500 text-indigo-100 text-[10px] px-2 py-0.5 rounded-full font-medium">Ver 1.9</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <button onclick="loadFromSheet()" class="bg-indigo-500 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1 shadow">
@@ -314,7 +314,7 @@
             ctx.beginPath();
             ctx.moveTo(coords.x, coords.y);
             ctx.strokeStyle = currentColor;
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 10; // 太線を強調 (以前は4)
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
         }
@@ -621,7 +621,6 @@
         function loadFromSheet() {
             const url = document.getElementById('gas-url').value.trim();
             if (!url) {
-                // まだ設定されていない場合は設定モーダルを開く
                 openSettingsModal();
                 showToast('先に設定でGASのURLを入力してください');
                 return;
